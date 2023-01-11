@@ -1,0 +1,19 @@
+---
+all:
+  hosts:
+    vyos:
+      ansible_host: <vyos ip>
+      ansible_user: vyos
+      ansible_become_method: sudo
+      ansible_connection: network_cli
+      ansible_network_os: vyos
+    debian:
+      ansible_host: <debian ip>
+      ansible_user: user
+      ansible_become_method: su
+      ansible_become_user: root
+      # ansible_become_password loaded from encrypted and untracked host_vars/debian/passwords.yml
+    pi:
+      ansible_host: <pi ip>
+      ansible_user: pi
+      ansible_become_method: sudo

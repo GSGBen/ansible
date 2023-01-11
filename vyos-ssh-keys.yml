@@ -1,0 +1,15 @@
+---
+# SSH with key authentication
+- hosts: vyos
+  # this is broken in latest version I think (for network devices). disable
+  gather_facts: no
+  # can't use the standard linux key management because vyos changes the ssh config to use its config and overwrites it
+  tasks:
+    - name: add ssh keys
+      vyos.vyos.vyos_config:
+        lines:
+          # pick out the identifier, type and key from the ssh line
+          - set system login user vyos authentication public-keys {{ item.split()[3] }} type {{ item.split()[0] }}
+          - set system login user vyos authentication public-keys {{ item.split()[3] }} key {{ item.split()[1] }}
+        save: true
+      loop: "{{ public_keys }}"

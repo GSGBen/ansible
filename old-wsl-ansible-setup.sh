@@ -1,4 +1,7 @@
 #!/bin/sh
+
+# Oooooooooooooooooooooooooooold. WSL 1, and Ansible circa-2018. You probably shouldn't use this.
+
 #http://docs.ansible.com/ansible/latest/intro_windows.html
 
 #Sets up ansible on Windows Subsystem for Linux (Ubuntu/Bash running on Windows 10/Server 2016)

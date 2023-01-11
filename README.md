@@ -1,7 +1,3 @@
-# GSG Ansible
-Mainly focused around Windows/WSL/Ansible uses.
+# Ansible
 
-## Future adds
-- Cisco
-- vSphere
-- Fortigate
+Misc ansible examples.

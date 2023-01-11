@@ -1,0 +1,53 @@
+---
+# snmp on device
+- name: install snmpd (debian)
+  become: yes
+  ansible.builtin.package:
+    # sudo apt update
+    update_cache: true
+    name: snmpd
+    state: present
+  when: ansible_facts['os_family'] == "Debian"
+- name: install snmpd (RHEL)
+  become: yes
+  ansible.builtin.package:
+    # sudo apt update
+    update_cache: true
+    name: net-snmp
+    state: present
+  when: ansible_facts['os_family'] == "RedHat"
+
+- name: configure SNMP
+  become: yes
+  ansible.builtin.template:
+    src: snmpd.conf.j2
+    dest: /etc/snmp/snmpd.conf
+
+- name: install distro detection
+  become: yes
+  get_url:
+    url: https://raw.githubusercontent.com/librenms/librenms-agent/master/snmp/distro
+    dest: /usr/bin/distro
+    mode: '+x'
+
+# should be a handler attached to the above
+- name: restart service
+  become: yes
+  ansible.builtin.service:
+    name: snmpd
+    state: restarted
+
+# this will automatically run a discovery on the next interval
+- name: add to librenms
+  uri:
+    url: "https://{{ librenms_hostname }}/api/v0/devices"
+    validate_certs: no
+    method: POST
+    headers:
+      X-Auth-Token: "{{ librenms_auth_token }}"
+    body_format: json
+    body:
+      hostname: "{{ ansible_host }}"
+      community: "{{ snmp_community }}"
+  ignore_errors: yes
+  delegate_to: localhost

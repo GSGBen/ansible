@@ -1,0 +1,16 @@
+# Change RANDOMSTRINGGOESHERE to your preferred SNMP community string
+com2sec readonly  default         {{ snmp_community }}
+
+group MyROGroup v2c        readonly
+view all    included  .1                               80
+access MyROGroup ""      any       noauth    exact  all    none   none
+
+syslocation {{ snmp_location }}
+syscontact {{ snmp_contact }}
+
+#Distro Detection
+extend distro /usr/bin/distro
+#Hardware Detection (uncomment to enable)
+#extend hardware '/bin/cat /sys/devices/virtual/dmi/id/product_name'
+#extend manufacturer '/bin/cat /sys/devices/virtual/dmi/id/sys_vendor'
+#extend serial '/bin/cat /sys/devices/virtual/dmi/id/product_serial'
