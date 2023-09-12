@@ -1,0 +1,105 @@
+---
+# zsh
+- name: install zsh
+  become: yes
+  ansible.builtin.package:
+    # sudo apt update
+    update_cache: true
+    name: zsh
+    state: present
+
+
+# oh-my-zsh
+- name: check if oh-my-zsh is installed
+  ansible.builtin.stat:
+    path: ~/.zshrc
+  register: zshrc_file
+- name: check if .oh-my-zsh folder exists
+  ansible.builtin.stat:
+    path: ~/.oh-my-zsh
+  register: zsh_folder
+# if the below plugins have downloaded then the .oh-my-zsh folder will have been created, preventing the oh-my-zsh installation
+- name: cleanup failed previous oh my zsh installation
+  ansible.builtin.file:
+    path: ~/.oh-my-zsh
+    state: absent
+  when: (not zshrc_file.stat.exists) and (zsh_folder.stat.exists)
+- name: install oh my zsh
+  ansible.builtin.shell: |
+    wget https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh
+    chmod +x install.sh
+    ./install.sh --unattended
+    rm install.sh
+  args:
+    warn: false
+  # if not already installed
+  when: not zshrc_file.stat.exists
+  # don't warn about using wget
+
+
+# plugins
+- name: check if zsh-autosuggestions is installed
+  ansible.builtin.stat:
+    path: ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions
+  register: zsh_autosuggestions_file
+- name: install zsh-autosuggestions
+  ansible.builtin.shell: git clone https://github.com/zsh-users/zsh-autosuggestions ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions
+  # if not already installed
+  when: not zsh_autosuggestions_file.stat.exists
+
+- name: check if zsh-syntax-highlighting is installed
+  ansible.builtin.stat:
+    path: ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting
+  register: zsh_syntax_highlighting_file
+- name: install zsh-syntax-highlighting
+  ansible.builtin.shell: git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting
+  # if not already installed
+  when: not zsh_syntax_highlighting_file.stat.exists
+
+- name: enable plugins
+  # replace existing plugins= line in zsh config file with line that enables all required.
+  # some are part of oh-my-zsh and some are installed above
+  ansible.builtin.lineinfile:
+    path: ~/.zshrc
+    regexp: '^plugins='
+    line: plugins=(zsh-autosuggestions colored-man-pages git zsh-syntax-highlighting)
+
+
+# themes
+- name: enable random theme each login (1)
+  ansible.builtin.lineinfile:
+    path: ~/.zshrc
+    regexp: '^ZSH_THEME='
+    line: ZSH_THEME="random"
+- name: enable random theme each login (2)
+  ansible.builtin.lineinfile:
+    path: ~/.zshrc
+    regexp: 'ZSH_THEME_RANDOM_CANDIDATES='
+    # empty = all
+    line: ZSH_THEME_RANDOM_CANDIDATES=()
+
+
+# default shell
+- name: check if zsh is default shell
+  ansible.builtin.shell: cat /etc/passwd | grep -P '^{{ ansible_user }}:.*zsh$'
+  register: default_shell_zsh
+  changed_when: false
+  # grep returns error code 1 when not found, ignore that
+  failed_when: default_shell_zsh.rc > 1
+- name: set zsh as default shell
+  # do it as root to avoid user password prompt
+  become: yes
+  ansible.builtin.shell: chsh -s $(which zsh) {{ ansible_user }}
+  when: not default_shell_zsh.stdout
+
+# history
+- name: increase history size for better reverse search
+  ansible.builtin.lineinfile:
+    path: ~/.zshrc
+    regexp: '^{{ item.key }}='
+    line: '{{ item.key }}="{{ item.value }}"'
+  loop:
+    - key: HISTSIZE
+      value: 5000
+    - key: SAVEHIST
+      value: 5000
